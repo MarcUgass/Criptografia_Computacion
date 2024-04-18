@@ -5,20 +5,48 @@
 
 class Entero {
 private:
-	std::vector<uint64_t> num;
-	bool positivo;
+    std::vector<uint64_t> num; // Vector que almacena los dígitos del número
+    bool positivo; // Bandera que indica si el número es positivo o negativo
 public:
+    // Constructor que inicializa un objeto Entero a partir de una cadena hexadecimal
     Entero(const std::string& hexString);
-    void imprimirHexadecimal() const;
-    uint64_t hexCharToUint(char c) const;
-    char uintToHexChar(uint64_t n) const;
-    
-    void cambiarSigno();
-    Entero sumar( Entero& otro);
-    Entero restar( Entero& otro);
-    Entero multiplicar(Entero& otro);
-    std::pair<Entero,Entero> dividir(Entero& otro);
 
+    // Método para imprimir el número en formato hexadecimal
+    void imprimirHexadecimal() const;
+
+    // Método que convierte un carácter hexadecimal en un entero sin signo
+    uint64_t hexCharToUint(char c) const;
+
+    // Método que convierte un entero sin signo en un carácter hexadecimal
+    char uintToHexChar(uint64_t n) const;
+
+    // Método para cambiar el signo del número
+    void cambiarSigno();
+
+    // Método para sumar dos objetos Entero
+    Entero sumar(Entero& otro);
+
+    // Método para restar dos objetos Entero
+    Entero restar(Entero& otro);
+
+    // Método para multiplicar dos objetos Entero
+    Entero multiplicar(Entero& otro);
+
+    // Método para dividir dos objetos Entero, devuelve el cociente y el residuo
+    std::pair<Entero, Entero> dividir(Entero& otro);
+
+    // Implementación del algoritmo de Karatsuba para la multiplicación de dos números grandes
+    Entero Karatsuba(Entero& n1, Entero& n2);
+
+    // Método para normalizar el número, eliminando ceros no significativos
     void normalizar();
+
+    // Método para obtener el máximo entre dos objetos Entero
     Entero obtenerMaximo(const Entero& otro) const;
+
+    // Método para eliminar ceros no significativos de un objeto Entero
+    void RemoveLeadingZeros(Entero& e);
+
+    // Método para desplazar a la izquierda un objeto Entero un número determinado de bits
+    std::vector<uint64_t> ShiftLeft(const Entero& e, int shift);
 };
