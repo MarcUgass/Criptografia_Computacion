@@ -1,4 +1,5 @@
 #include "Entero.h"
+#include <utility>
 
 using namespace std;
 
@@ -126,7 +127,7 @@ Entero Entero::sumar(Entero& otro) {
 
 // Método para restar dos objetos Entero
 Entero Entero::restar(Entero& otro) {
-    Entero resultado("0x"); // Inicializa el resultado como 0
+    Entero resultado("0x0"); // Inicializa el resultado como 0
     uint64_t carry = 0; // Inicializa el acarreo como 0
 
     // Ajusta los vectores para que tengan la misma longitud agregando ceros a la izquierda
@@ -179,78 +180,163 @@ Entero Entero::multiplicar(Entero& otro) {
 }
 
 
+//Este código implementa el algoritmo de multiplicación Karatsuba para números enteros grandes.
 Entero Entero::Karatsuba(Entero& n1, Entero& n2) {
+    // Calcula el tamaño total de los números a multiplicar
     int n = n1.num.size() + n2.num.size();
     Entero resultado("0x0");
-    // Cuando el tamaño es pequeño se usa multiplicacion normals
+
+    // Si el tamaño total es pequeño, utiliza la multiplicación normal
     if (n <= 4) {
         resultado = n1.multiplicar(n2);
         RemoveLeadingZeros(resultado);
         return resultado;
     }
-    int half = n / 2;
 
-    Entero n11("0x0"), n12("0x0"), n21("0x0"), n22("0x0"), z0("0x0"), z1("0x0"), z2("0x0");
-    vector<uint64_t> a1(n1.num.begin(), n1.num.begin() + min(half, int(n1.num.size())));
-    vector<uint64_t> a0(n1.num.begin() + min(half, int(n1.num.size())), n1.num.end());
-    vector<uint64_t> b1(n2.num.begin(), n2.num.begin() + min(half, int(n2.num.size())));
-    vector<uint64_t> b0(n2.num.begin() + min(half, int(n2.num.size())), n2.num.end());
+    // Divide los números en mitades
+    int half = n1.num.size() / 2;
+    Entero a_low("0x0"), a_high("0x0"), b_low("0x0"), b_high("0x0"), z0("0x0"), z1("0x0"), z2("0x0"), aux0("0x0"), aux1("0x0"), aux2("0x0");
+    vector<uint64_t> va_low(n1.num.begin(), n1.num.begin() + half);
+    vector<uint64_t> va_high(n1.num.begin() + half, n1.num.end());
+    vector<uint64_t> vb_low(n2.num.begin(), n2.num.begin() + half);
+    vector<uint64_t> vb_high(n2.num.begin() + half, n2.num.end());
+    a_low.num = va_low;
+    a_high.num = va_high;
+    b_low.num = vb_low;
+    b_high.num = vb_high;
 
-    n11.num = a1;
-    n12.num = a0;
-    n21.num = b1;
-    n22.num = b0;
+    // Realiza las multiplicaciones recursivas
+    z0 = Karatsuba(a_low, b_low);
+    z2 = Karatsuba(a_high, a_low);
+    aux0 = a_low.sumar(a_high);
+    aux1 = b_low.sumar(b_high);
+    aux2 = Karatsuba(aux0, aux1);
 
-    z0 = Karatsuba(n12,n22);
-    z2 = Karatsuba(n11,n21);
-    Entero aux0 = n12.sumar(n11);
-    Entero aux1 = n22.sumar(n21);
-    Entero aux2 = Karatsuba(aux0, aux1);
-    Entero aux3 = z0.restar(aux2);
-    z1 = z2.restar(aux3);
+    // Calcula los términos intermedios
+    aux0 = aux2.restar(z0);
+    z1 = aux0.restar(z2);
 
-    return z1;
+    // Realiza los desplazamientos necesarios
+    aux0 = ShiftLeft(z2, 2 * half);
+    aux1 = ShiftLeft(z1, half);
+
+    // Suma los términos para obtener el resultado final
+    aux2 = aux0.sumar(aux1);
+    resultado = aux2.sumar(z0);
+
+    // Remueve ceros no significativos del resultado
+    RemoveLeadingZeros(resultado);
+    return resultado;
 }
 
+std::tuple<Entero, Entero, Entero> Entero::EuclideanExtendido(const Entero& a, const Entero& b) {
+    if (b.num.size() == 0)
+        return std::make_tuple(a, Entero("1"), Entero("0"));
+
+    Entero x1("0"), y1("1"), x2("1"), y2("0");
+    Entero q, r, x, y;
+
+    while (!(b.num.size() == 0)) {
+        std::tie(q, r) = a.dividir(b);
+        x = x1.restar(q.multiplicar(x2));
+        y = y1.restar(q.multiplicar(y2));
+        a = b;
+        b = r;
+        x1 = x2;
+        y1 = y2;
+        x2 = x;
+        y2 = y;
+    }
+
+    return std::make_tuple(a, x1, y1);
+}
+
+std::pair<Entero, Entero> Entero::dividir(Entero& divisor) {
+
+    // Realizar la división larga
+    Entero dividendo(*this); // Hacemos una copia del dividendo
+    Entero cociente("0x0");
+    Entero resto("0x0");
+    Entero aux0("0x0");
+    Entero aux1("0x0");
+
+    // Verificar si el divisor es cero
+    if (divisor.num.size() == 0) {
+        std::cerr << "Error: División por cero." << std::endl;
+        return std::make_pair(cociente, resto); // Se podría lanzar una excepción en lugar de retornar un valor predeterminado
+    }
+
+    // Normalizamos los números para eliminar los ceros no significativos
+    RemoveLeadingZeros(dividendo);
+    Entero divisorAbs = divisor;
+    divisorAbs.positivo = true;
+    RemoveLeadingZeros(divisorAbs);
+
+    // Iteramos mientras el dividendo sea mayor o igual que el divisor
+    while (!dividendo.esMayorOIgualQue(divisorAbs)) {
+        // Obtenemos la parte del dividendo que vamos a dividir
+        Entero tempDividendo = dividendo.obtenerMaximo(divisorAbs);
+
+        int k = 0;
+        // Realizamos la división por sustracción
+        while (tempDividendo.esMayorOIgualQue(divisorAbs) && k < divisor.num.size()) {
+            tempDividendo = tempDividendo.restar(divisorAbs);
+            k++;
+        }
+
+        // Agregamos el cociente parcial al cociente final
+        cociente.num.push_back(k);
+        RemoveLeadingZeros(cociente);
+
+        // Multiplicamos el divisor absoluto por el dígito actual del cociente
+        string aux2 = "0x" + std::to_string(k);
+        aux0 = Entero(aux2);
+        aux1 = divisorAbs.multiplicar(aux0);
+        
+        // Restamos el resultado de la multiplicación del dividendo
+        dividendo = dividendo.restar(aux1);
+        RemoveLeadingZeros(dividendo);
+    }
+
+    // El resto es lo que queda del dividendo
+    resto = dividendo;
+    return std::make_pair(cociente, resto);
+}
+
+
+//Función para combrobar si un valor Entero es mayor o Igual que otro
+bool Entero::esMayorOIgualQue(const Entero& otro) const {
+    // Comprobar la cantidad de dígitos
+    if (num.size() != otro.num.size()) {
+        // El número con más dígitos es mayor si ambos tienen el mismo signo
+        return (positivo && num.size() > otro.num.size()) || (!positivo && num.size() < otro.num.size());
+    }
+
+    // Comprobar los dígitos uno por uno
+    for (int i = num.size() - 1; i >= 0; --i) {
+        if (num[i] != otro.num[i]) {
+            // Si encontramos un dígito diferente, podemos determinar cuál número es mayor
+            return (positivo && num[i] > otro.num[i]) || (!positivo && num[i] < otro.num[i]);
+        }
+    }
+
+    // Si llegamos hasta aquí, ambos números son iguales
+    return true;
+}
+
+
+// Función para remover ceros no significativos de un número entero
 void Entero::RemoveLeadingZeros(Entero& e) {
     while (e.num.size() > 1 && e.num.back() == 0) {
         e.num.pop_back();
     }
 }
 
-vector<uint64_t> Entero::ShiftLeft(const Entero& e, int shift) {
+// Función para desplazar un número entero hacia la izquierda
+Entero Entero::ShiftLeft(const Entero& e, int shift) {
+    Entero resultado("0x0");
     vector<uint64_t> result(e.num.size() + shift, 0);
-    copy(e.num.begin(), e.num.end(), result.begin() + shift);
-    return result;
+    resultado.num = result;
+    copy(e.num.begin(), e.num.end(), resultado.num.begin() + shift);
+    return resultado;
 }
-
-/*
-vector<int> ShiftLeft(const vector<int>& num, int shift) {
-    vector<int> result(num.size() + shift, 0);
-    copy(num.begin(), num.end(), result.begin() + shift);
-    return result;
-}
-*/
-
-/*
-std::pair<Entero, Entero> Entero::dividir(Entero& otro) {
-    Entero quotient("0x0");
-    //std::vector<uint64_t> remainder = num; // Inicializamos el residuo con el dividendo
-    Entero remainder("0x0");
-    remainder.num = num;
-
-    // Iteramos hasta que el residuo sea menor que el divisor
-    while (remainder.num.size() >= otro.num.size()) {
-        // Encontramos el cociente de la división
-        uint64_t quotientDigit = 0;
-        while (remainder.num >= otro.num) {
-            remainder = remainder.restar(otro);
-            //remainder = subtractHexVectors(remainder, divisor);
-            ++quotientDigit;
-        }
-        quotient.num.push_back(quotientDigit);
-    }
-
-    return std::make_pair(quotient, remainder);
-}
-*/

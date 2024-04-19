@@ -6,9 +6,9 @@
 class Entero {
 private:
     std::vector<uint64_t> num; // Vector que almacena los dígitos del número
-    bool positivo; // Bandera que indica si el número es positivo o negativo
+    bool positivo; // Variable que indica si el número es positivo o negativo
 public:
-    // Constructor que inicializa un objeto Entero a partir de una cadena hexadecimal
+    // Constructor que inicializa un objeto Entero a partir de una cadena
     Entero(const std::string& hexString);
 
     // Método para imprimir el número en formato hexadecimal
@@ -38,6 +38,12 @@ public:
     // Implementación del algoritmo de Karatsuba para la multiplicación de dos números grandes
     Entero Karatsuba(Entero& n1, Entero& n2);
 
+    //Implementación del algoritmo Extendido de Euclides entre dos números grandes
+    std::tuple<Entero, Entero, Entero> EuclideanExtendido(const Entero& a, const Entero& b);
+
+    //Función para combrobar si un valor Entero es mayor o Igual que otro
+    bool esMayorOIgualQue(const Entero& otro) const;
+
     // Método para normalizar el número, eliminando ceros no significativos
     void normalizar();
 
@@ -48,5 +54,5 @@ public:
     void RemoveLeadingZeros(Entero& e);
 
     // Método para desplazar a la izquierda un objeto Entero un número determinado de bits
-    std::vector<uint64_t> ShiftLeft(const Entero& e, int shift);
+    Entero ShiftLeft(const Entero& e, int shift);
 };

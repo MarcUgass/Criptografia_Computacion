@@ -26,19 +26,22 @@ int main()
     int op = 0;
     std::string hexadecimal = "0x58436F83534A432C5342543C543F";
     Entero entero(hexadecimal);
+    std::string dig10 = "0x543..";
 
-    std::string op1 = "0x56A6532534ACD123554";
-    std::string op2 = "0x75F353256A6532ADB23";
+    std::string op1 = "0x5663";
+    std::string op2 = "0x7F";
     Entero operaciones1(op1);
     Entero operaciones2(op2);
     Entero resultado("0x0");
     Entero residuo("0x0");
+    pair<Entero,Entero> result = make_pair(resultado, residuo);
 
     // Registra el tiempo de inicio
-    auto start = high_resolution_clock::now();
+
 
     mostrarMenu();
     cin >> op;
+    auto start = high_resolution_clock::now();
     switch (op) {
     case 1:
         entero.imprimirHexadecimal();
@@ -61,9 +64,9 @@ int main()
         resultado.imprimirHexadecimal();
         break;
     case 6:
-        //auto result = operaciones1.dividir(operaciones2);
-        //result.first.imprimirHexadecimal();
-        //result.second.imprimirHexadecimal();
+        result = operaciones1.dividir(operaciones2);
+        result.first.imprimirHexadecimal();
+        result.second.imprimirHexadecimal();
     case 7:
         resultado = operaciones1.Karatsuba(operaciones1, operaciones2);
         resultado.imprimirHexadecimal();
@@ -75,8 +78,8 @@ int main()
     auto end = high_resolution_clock::now();
 
     // Calcula la duración del tiempo transcurrido
-    auto duration = duration_cast<milliseconds>(end - start);
-    cout << "Duración: " << duration.count();
+    auto duration = duration_cast<microseconds>(end - start);
+    cout << "Duracion: " << duration.count();
 
     return 0;
 }
