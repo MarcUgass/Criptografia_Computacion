@@ -5,6 +5,7 @@
 #include <iostream>
 #include "Entero.h"
 #include <chrono>
+#include <sstream>
 
 using namespace std;
 using namespace std::chrono;
@@ -18,23 +19,66 @@ void mostrarMenu() {
     cout << "5. Multiplicacion" << endl;
     cout << "6. Division" << endl;
     cout << "7. Karatsuba " << endl;
+    cout << "8. Euclides Extendido " << endl;
+    cout << "9. Exponenciacion modular rapida " << endl;
     cout << "10. Salir" << endl;
     cout << "Opcion: " << endl;
 }
+
+string generateHexDigits(int numDigits) {
+    std::stringstream ss;
+    srand(time(NULL)); // Semilla para números aleatorios
+
+    for (int i = 0; i < numDigits; ++i) {
+        int randomDigit = rand() % 16; // Generar un dígito hexadecimal aleatorio (entre 0 y 15)
+        ss << std::hex << randomDigit; // Agregar el dígito hexadecimal a la cadena
+    }
+
+    return ss.str(); // Devolver la cadena hexadecimal generada
+}
+
 int main()
 {
     int op = 0;
-    std::string hexadecimal = "0x58436F83534A432C5342543C543F";
+    std::string hexadecimal = "0xfd0456c3831c20cda400d540b";
     Entero entero(hexadecimal);
-    std::string dig10 = "0x543..";
+    
+    //Operaciones básicas
+    int c = 100;
+    pair<string, string> operaciones = make_pair("0x"+ generateHexDigits(c), "0x" + generateHexDigits(c));
+    
+    //aritméticas basicas
+    Entero operaciones1(operaciones.first);
+    Entero operaciones2(operaciones.second);
 
-    std::string op1 = "0x5663";
-    std::string op2 = "0x7F";
-    Entero operaciones1(op1);
-    Entero operaciones2(op2);
     Entero resultado("0x0");
-    Entero residuo("0x0");
-    pair<Entero,Entero> result = make_pair(resultado, residuo);
+
+    //división
+    int m = 100; //Digitos de divisón
+    int n = m / 2;
+    Entero dividendo("0x" + generateHexDigits(m));
+    Entero divisor("0x" + generateHexDigits(n));
+    Entero cociente("0x0");
+    Entero residuo( "0x0");
+
+    //Euclides Extendido
+    int x = 10;
+    Entero a("0x" + generateHexDigits(x));
+    Entero b("0x0" + generateHexDigits(x));
+    Entero d("0x0");
+    Entero u("0x0");
+    Entero v("0x0");
+
+    //Exponenciación modular rápida
+    int exp = 3;
+    //Entero base("0x" + generateHexDigits(exp));
+    //Entero exponente("0x" + generateHexDigits(exp));
+    //Entero modulo("0x" + generateHexDigits(exp));
+
+    Entero base("0x25");
+    Entero exponente("0x37");
+    Entero modulo("0x221");
+
 
     // Registra el tiempo de inicio
 
@@ -64,13 +108,21 @@ int main()
         resultado.imprimirHexadecimal();
         break;
     case 6:
-        result = operaciones1.dividir(operaciones2);
-        result.first.imprimirHexadecimal();
-        result.second.imprimirHexadecimal();
+        cociente.dividir(dividendo,divisor,cociente, residuo);
+        cociente.imprimirHexadecimal();
+        residuo.imprimirHexadecimal();
     case 7:
         resultado = operaciones1.Karatsuba(operaciones1, operaciones2);
         resultado.imprimirHexadecimal();
         break;
+    case 8:
+        a.EuclidesExtendido(a, b, d, u, v);
+        d.imprimirHexadecimal();
+        u.imprimirHexadecimal();
+        v.imprimirHexadecimal();
+    case 9:
+        resultado = base.ExponencialModularRapida(base, exponente, modulo);
+        resultado.imprimirHexadecimal();
     }
 
 

@@ -1,5 +1,6 @@
 #include "Entero.h"
 #include <utility>
+#include <bitset>
 
 using namespace std;
 
@@ -66,35 +67,6 @@ char Entero::uintToHexChar(uint64_t n) const {
 // Método para cambiar el signo del número
 void Entero::cambiarSigno() {
     positivo = !positivo;
-}
-
-// Método para normalizar el número, eliminando ceros no significativos
-void Entero::normalizar() {
-    while (num.size() > 1 && num.back() == 0) {
-        num.pop_back(); // Elimina ceros no significativos del final del vector
-    }
-    if (num.size() == 1 && num[0] == 0) {
-        positivo = true; // Si el número es 0, se establece como positivo
-    }
-}
-
-// Método para obtener el máximo entre dos objetos Entero
-Entero Entero::obtenerMaximo(const Entero& otro) const {
-    // Compara las longitudes de los vectores de dígitos
-    if (num.size() > otro.num.size())
-        return *this; // Devuelve este objeto si tiene más dígitos
-    else if (num.size() < otro.num.size())
-        return otro; // Devuelve el otro objeto si tiene más dígitos
-    else {
-        // Si los vectores tienen la misma longitud, compara los dígitos de mayor a menor
-        for (int i = num.size() - 1; i >= 0; --i) {
-            if (num[i] > otro.num[i])
-                return *this; // Devuelve este objeto si tiene un dígito mayor
-            else if (num[i] < otro.num[i])
-                return otro; // Devuelve el otro objeto si tiene un dígito mayor
-        }
-        return *this; // Devuelve este objeto si son iguales
-    }
 }
 
 // Método para sumar dos objetos Entero
@@ -195,7 +167,7 @@ Entero Entero::Karatsuba(Entero& n1, Entero& n2) {
 
     // Divide los números en mitades
     int half = n1.num.size() / 2;
-    Entero a_low("0x0"), a_high("0x0"), b_low("0x0"), b_high("0x0"), z0("0x0"), z1("0x0"), z2("0x0"), aux0("0x0"), aux1("0x0"), aux2("0x0");
+    Entero a_low("0x0"), a_high("0x0"), b_low("0x0"), b_high("0x0");
     vector<uint64_t> va_low(n1.num.begin(), n1.num.begin() + half);
     vector<uint64_t> va_high(n1.num.begin() + half, n1.num.end());
     vector<uint64_t> vb_low(n2.num.begin(), n2.num.begin() + half);
@@ -206,15 +178,15 @@ Entero Entero::Karatsuba(Entero& n1, Entero& n2) {
     b_high.num = vb_high;
 
     // Realiza las multiplicaciones recursivas
-    z0 = Karatsuba(a_low, b_low);
-    z2 = Karatsuba(a_high, a_low);
-    aux0 = a_low.sumar(a_high);
-    aux1 = b_low.sumar(b_high);
-    aux2 = Karatsuba(aux0, aux1);
+    Entero z0 = Karatsuba(a_low, b_low);
+    Entero z2 = Karatsuba(a_high, a_low);
+    Entero aux0 = a_low.sumar(a_high);
+    Entero aux1 = b_low.sumar(b_high);
+    Entero aux2 = Karatsuba(aux0, aux1);
 
     // Calcula los términos intermedios
     aux0 = aux2.restar(z0);
-    z1 = aux0.restar(z2);
+    Entero z1 = aux0.restar(z2);
 
     // Realiza los desplazamientos necesarios
     aux0 = ShiftLeft(z2, 2 * half);
@@ -229,98 +201,182 @@ Entero Entero::Karatsuba(Entero& n1, Entero& n2) {
     return resultado;
 }
 
-std::tuple<Entero, Entero, Entero> Entero::EuclideanExtendido(const Entero& a, const Entero& b) {
-    if (b.num.size() == 0)
-        return std::make_tuple(a, Entero("1"), Entero("0"));
 
-    Entero x1("0"), y1("1"), x2("1"), y2("0");
-    Entero q, r, x, y;
+// Función para realizar la división hexadecimal
+void Entero::dividir(const Entero& dividendo, Entero& divisor, Entero& cociente, Entero& residuo) {
+    cociente.num.clear();
+    residuo = dividendo;
 
-    while (!(b.num.size() == 0)) {
-        std::tie(q, r) = a.dividir(b);
-        x = x1.restar(q.multiplicar(x2));
-        y = y1.restar(q.multiplicar(y2));
-        a = b;
-        b = r;
-        x1 = x2;
-        y1 = y2;
-        x2 = x;
-        y2 = y;
+    int tamanoDivisor = divisor.num.size();
+
+    while (residuo.num.size() >= tamanoDivisor && cociente.num.size() < divisor.num.size()) {
+        // Encontrar el dígito más significativo del cociente
+        int i = residuo.num.size() - tamanoDivisor;
+        uint64_t q = 0;
+
+        // Realizar la división para el dígito actual
+        while (i > 0) {
+            // Calcular el residuo parcial
+            std::vector<uint64_t> residuoParcial(residuo.num.begin() + i, residuo.num.begin() + i + tamanoDivisor);
+            Entero rp("0x0");
+            rp.num = residuoParcial;
+            while (residuoParcial.size() < tamanoDivisor + 1)
+                residuoParcial.insert(residuoParcial.begin(), 0);
+
+            // Calcular el dígito del cociente
+            q = 0;
+            while (comparar(residuoParcial, divisor.num) >= 0) {
+                q++;
+                rp = rp.restar(divisor);
+            }
+
+            // Actualizar el cociente y el residuo
+            cociente.num.push_back(q);
+            residuo.num.erase(residuo.num.begin() + i, residuo.num.begin() + i + tamanoDivisor);
+            residuo.num.insert(residuo.num.begin() + i, residuoParcial.begin() + 1, residuoParcial.end());
+
+            // Actualizar el índice
+            i--;
+        }
     }
-
-    return std::make_tuple(a, x1, y1);
 }
 
-std::pair<Entero, Entero> Entero::dividir(Entero& divisor) {
-
-    // Realizar la división larga
-    Entero dividendo(*this); // Hacemos una copia del dividendo
-    Entero cociente("0x0");
-    Entero resto("0x0");
-    Entero aux0("0x0");
-    Entero aux1("0x0");
-
-    // Verificar si el divisor es cero
-    if (divisor.num.size() == 0) {
-        std::cerr << "Error: División por cero." << std::endl;
-        return std::make_pair(cociente, resto); // Se podría lanzar una excepción en lugar de retornar un valor predeterminado
+void Entero::EuclidesExtendido(Entero& a, Entero& b, Entero& d, Entero& u, Entero& v) {
+    // Algoritmo de Euclides Extendido para encontrar el máximo común divisor y los coeficientes
+    // de Bézout.
+    if (b.esCero()) {
+        // Si b es cero, entonces el máximo común divisor es a, y los coeficientes son 1 y 0.
+        d = a;
+        u = Entero("0x1");
+        v = Entero("0x0");
+        return;
     }
 
-    // Normalizamos los números para eliminar los ceros no significativos
-    RemoveLeadingZeros(dividendo);
-    Entero divisorAbs = divisor;
-    divisorAbs.positivo = true;
-    RemoveLeadingZeros(divisorAbs);
+    // Inicialización de variables necesarias para el algoritmo.
+    Entero x0("0x1"), x1("0x0"), y0("0x0"), y1("0x1"), q("0x0"), r("0x0"), x("0x0"), y("0x0"), aux0("0x0");
+    pair<Entero, Entero> result = make_pair(q, r);
+    Entero num1 = a;
+    Entero num2 = b;
 
-    // Iteramos mientras el dividendo sea mayor o igual que el divisor
-    while (!dividendo.esMayorOIgualQue(divisorAbs)) {
-        // Obtenemos la parte del dividendo que vamos a dividir
-        Entero tempDividendo = dividendo.obtenerMaximo(divisorAbs);
+    // Algoritmo de Euclides Extendido.
+    while (!num2.esCero()) {
+        //result = num1.dividir(num2);
+        dividir(num1, num2, result.first, result.second);
+        aux0 = result.first.multiplicar(x1);
+        x = x0.restar(aux0);
 
-        int k = 0;
-        // Realizamos la división por sustracción
-        while (tempDividendo.esMayorOIgualQue(divisorAbs) && k < divisor.num.size()) {
-            tempDividendo = tempDividendo.restar(divisorAbs);
-            k++;
+        aux0 = result.first.multiplicar(y1);
+        y = y0.restar(aux0);
+        num1 = num2;
+        num2 = result.second;
+        x0 = x1;
+        x1 = x;
+        y0 = y1;
+        y1 = y;
+    }
+
+    // Asignación de los resultados obtenidos.
+    d = num1;
+    u = x0;
+    v = y0;
+}
+
+// Implementación de la operación exponenciación modular rápida.
+Entero Entero::ExponencialModularRapida(Entero& base, Entero& exponente, Entero& modulo) {
+    // Inicialización del resultado.
+    Entero resultado("0x1");
+    //base = base.obtenerMaximo(modulo);
+    vector<bool> cadena_binarios;
+    exponente.normalizar();
+
+    // Conversión del exponente a binario.
+    for (uint64_t i = 0; i < exponente.num.size(); i++) {
+        bitset<4> bits(exponente.num[i]);
+        std::vector<bool> binaryVector;
+        for (int i = 3; i >= 0; --i) {
+            binaryVector.push_back(bits[i]);
+        }
+        cadena_binarios.insert(cadena_binarios.end(), binaryVector.begin(), binaryVector.end());
+    }
+
+    // Algoritmo de exponenciación modular rápida.
+    for (int i = 0; i < cadena_binarios.size(); i++) {
+        //En el caso del bit de posición es 1, se multiplica la base por el resultado y se hace el modulo
+        if (cadena_binarios[i] == true) {
+            resultado = resultado.multiplicar(base);
+            resultado = resultado.modulo(modulo);
+        }
+            base = base.multiplicar(base);
+            base = base.modulo(modulo);
+
+    }
+    return resultado;
+}
+
+// Implementación de la operación módulo.
+Entero Entero::modulo(Entero& m) {
+    Entero copia("0x0");
+    copia.num = this->num;
+
+    while (copia.esMayorOIgualQue(m)) {
+        copia = copia.restar(m);
+        copia.girarIzquierda();
+        RemoveLeadingZeros(copia);
+    }
+    return copia;
+}
+
+
+void Entero::girarIzquierda() {
+    // Si el vector de dígitos está vacío o tiene un solo dígito, no es necesario girar
+    if (num.size() <= 1) {
+        return;
+    }
+
+    // Guardar el primer dígito para reinsertarlo al final después de girar
+    while (num[0] == 0) { //Itera los valores que estan enfrente del numero, `ya que son los menos significativos
+        uint64_t primerDigito = num.front();
+        // Mover todos los dígitos una posición hacia la izquierda
+        for (size_t i = 0; i < num.size() - 1; ++i) {
+            num[i] = num[i + 1];
         }
 
-        // Agregamos el cociente parcial al cociente final
-        cociente.num.push_back(k);
-        RemoveLeadingZeros(cociente);
-
-        // Multiplicamos el divisor absoluto por el dígito actual del cociente
-        string aux2 = "0x" + std::to_string(k);
-        aux0 = Entero(aux2);
-        aux1 = divisorAbs.multiplicar(aux0);
-        
-        // Restamos el resultado de la multiplicación del dividendo
-        dividendo = dividendo.restar(aux1);
-        RemoveLeadingZeros(dividendo);
+        // Insertar el primer dígito al final del vector
+        num.back() = primerDigito;
     }
-
-    // El resto es lo que queda del dividendo
-    resto = dividendo;
-    return std::make_pair(cociente, resto);
 }
-
+//Función que devuelve true, si un valor Entero es zero
+bool Entero::esCero() const {
+    return (num.size() == 1 && num[0] == 0);
+}
 
 //Función para combrobar si un valor Entero es mayor o Igual que otro
 bool Entero::esMayorOIgualQue(const Entero& otro) const {
-    // Comprobar la cantidad de dígitos
-    if (num.size() != otro.num.size()) {
-        // El número con más dígitos es mayor si ambos tienen el mismo signo
-        return (positivo && num.size() > otro.num.size()) || (!positivo && num.size() < otro.num.size());
+    // Normalizar ambos números para eliminar ceros no significativos
+    Entero esteAbsoluto = *this;
+    //esteAbsoluto.normalizar();
+    Entero otroAbsoluto = otro;
+    //otroAbsoluto.normalizar();
+
+    // Comparar el tamaño de los vectores de dígitos
+    if (esteAbsoluto.num.size() > otroAbsoluto.num.size()) {
+        return true;
+    }
+    else if (esteAbsoluto.num.size() < otroAbsoluto.num.size()) {
+        return false;
     }
 
-    // Comprobar los dígitos uno por uno
-    for (int i = num.size() - 1; i >= 0; --i) {
-        if (num[i] != otro.num[i]) {
-            // Si encontramos un dígito diferente, podemos determinar cuál número es mayor
-            return (positivo && num[i] > otro.num[i]) || (!positivo && num[i] < otro.num[i]);
+    // Si tienen el mismo número de dígitos, comparar cada dígito
+    for (int i = esteAbsoluto.num.size() - 1; i >= 0; --i) {
+        if (esteAbsoluto.num[i] > otroAbsoluto.num[i]) {
+            return true;
+        }
+        else if (esteAbsoluto.num[i] < otroAbsoluto.num[i]) {
+            return false;
         }
     }
 
-    // Si llegamos hasta aquí, ambos números son iguales
+    // Si llegamos aquí, ambos números son iguales
     return true;
 }
 
@@ -339,4 +395,52 @@ Entero Entero::ShiftLeft(const Entero& e, int shift) {
     resultado.num = result;
     copy(e.num.begin(), e.num.end(), resultado.num.begin() + shift);
     return resultado;
+}
+
+// Método para normalizar el número, eliminando ceros no significativos
+void Entero::normalizar() {
+    while (num.size() > 1 && num.back() == 0) {
+        num.pop_back(); // Elimina ceros no significativos del final del vector
+    }
+    if (num.size() == 1 && num[0] == 0) {
+        positivo = true; // Si el número es 0, se establece como positivo
+    }
+}
+
+// Método para obtener el máximo entre dos objetos Entero
+Entero Entero::obtenerMaximo(const Entero& otro) const {
+    // Compara las longitudes de los vectores de dígitos
+    if (num.size() > otro.num.size())
+        return *this; // Devuelve este objeto si tiene más dígitos
+    else if (num.size() < otro.num.size())
+        return otro; // Devuelve el otro objeto si tiene más dígitos
+    else {
+        // Si los vectores tienen la misma longitud, compara los dígitos de mayor a menor
+        for (int i = num.size() - 1; i >= 0; --i) {
+            if (num[i] > otro.num[i])
+                return *this; // Devuelve este objeto si tiene un dígito mayor
+            else if (num[i] < otro.num[i])
+                return otro; // Devuelve el otro objeto si tiene un dígito mayor
+        }
+        return *this; // Devuelve este objeto si son iguales
+    }
+}
+
+int Entero::comparar(const std::vector<uint64_t>& a, const std::vector<uint64_t>& b) {
+    int tamanoA = a.size();
+    int tamanoB = b.size();
+
+    if (tamanoA > tamanoB)
+        return 1;
+    else if (tamanoA < tamanoB)
+        return -1;
+    else {
+        for (int i = tamanoA - 1; i >= 0; --i) {
+            if (a[i] > b[i])
+                return 1;
+            else if (a[i] < b[i])
+                return -1;
+        }
+        return 0;
+    }
 }

@@ -33,13 +33,25 @@ public:
     Entero multiplicar(Entero& otro);
 
     // Método para dividir dos objetos Entero, devuelve el cociente y el residuo
-    std::pair<Entero, Entero> dividir(Entero& otro);
+    void dividir(const Entero& dividendo, Entero& divisor, Entero& cociente, Entero& residuo);
 
     // Implementación del algoritmo de Karatsuba para la multiplicación de dos números grandes
     Entero Karatsuba(Entero& n1, Entero& n2);
 
     //Implementación del algoritmo Extendido de Euclides entre dos números grandes
-    std::tuple<Entero, Entero, Entero> EuclideanExtendido(const Entero& a, const Entero& b);
+    void EuclidesExtendido(Entero& a, Entero& b, Entero& d, Entero& u, Entero& v);
+
+    //Implemtanción de la oepración exponenciación modular rápida 
+    Entero ExponencialModularRapida(Entero& base, Entero& exponente, Entero& modulo);
+
+    //Función para devolver el modulo de dos numeros
+    Entero modulo( Entero& m);
+
+    //vector<bool> hexToBinaryVector(uint64_t hexValue);
+    void girarIzquierda();
+
+    //Función que devuelve true, si un valor Entero es zero
+    bool esCero() const;
 
     //Función para combrobar si un valor Entero es mayor o Igual que otro
     bool esMayorOIgualQue(const Entero& otro) const;
@@ -55,4 +67,7 @@ public:
 
     // Método para desplazar a la izquierda un objeto Entero un número determinado de bits
     Entero ShiftLeft(const Entero& e, int shift);
+
+    //Funciona muy parecido al esMayorOIGual, pero compara solo entre vectores, y devuelve tipo int, para hacer preubas con la funcion division
+    int comparar(const std::vector<uint64_t>& a, const std::vector<uint64_t>& b);
 };
