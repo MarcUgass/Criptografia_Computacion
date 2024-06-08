@@ -9,3 +9,7 @@ el hardware de nuestra máquina.
 En esta práctica exploraremos las propiedades de los distintos modos de operación
 disponibles para criptografía simétrica, así como las propiedades de las funciones hash,
 a través de la experimentación con OpenSSL.
+
+## Criptografía asimétrica
+En esta práctica utilizaremos las herramientas de OpenSSL para generar y utilizar
+claves y parámetros para criptosistemas asimétricos.
